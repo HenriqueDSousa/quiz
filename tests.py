@@ -125,3 +125,37 @@ def test_raises_if_invalid_set_correct_choices():
 
     with pytest.raises(Exception) as e:
         question.set_correct_choices(['invalid-id'])
+
+@pytest.fixture
+def question_with_choices():
+
+    q = Question(title="q1", max_selections=2)
+    c1 = q.add_choice("a", False)
+    c2 = q.add_choice("b", True)
+    c3 = q.add_choice("c", True)
+    return q, c1, c2, c3
+
+
+@pytest.fixture
+def empty_question():
+    return Question(title="Questão vazia")
+
+def test_find_correct_choice_ids(question_with_choices):
+    q, c1, c2, c3 = question_with_choices
+
+    correct_ids = q._find_correct_choice_ids()
+
+    assert c2.id in correct_ids
+    assert c3.id in correct_ids
+    assert c1.id not in correct_ids
+    assert len(correct_ids) == 2
+
+def test_remove_all_choices_with_fixture(question_with_choices):
+    q, c1, c2, c3 = question_with_choices
+
+    assert len(q.choices) == 3
+
+    q.remove_all_choices()
+
+    assert q.choices == []
+    assert q._list_choice_ids() == []
