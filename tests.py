@@ -2,6 +2,15 @@ import pytest
 from model import Question
 
 
+def test_create_choice_with_invalid_text():
+    question = Question(title='q1')
+    with pytest.raises(Exception) as e:
+        question.add_choice('', False)
+        assert str(e.value) == 'Text cannot be empty'
+    with pytest.raises(Exception) as e:
+        question.add_choice('a'*101, False)
+        assert str(e.value) == 'ext cannot be longer than 100 characters'
+
 def test_create_question():
     question = Question(title='q1')
     assert question.id != None
@@ -25,6 +34,12 @@ def test_create_question_with_valid_points():
     question = Question(title='q1', points=100)
     assert question.points == 100
 
+def test_create_question_with_invalid_points():
+    with pytest.raises(Exception) as e:
+        Question(title='q1', points=0)
+        assert str(e.value) == 'Points must be between 1 and 100'
+
+
 def test_create_choice():
     question = Question(title='q1')
     
@@ -34,3 +49,79 @@ def test_create_choice():
     assert len(question.choices) == 1
     assert choice.text == 'a'
     assert not choice.is_correct
+
+def test_remove_choice():
+    question = Question(title='q1')
+    choice = question.add_choice('a', False)
+
+    question.remove_choice_by_id(choice.id)
+    assert question.choices == []
+
+def test_remove_choice_with_invalid_id():
+    question = Question(title='q1')
+    choice = question.add_choice('a', False)
+
+    with pytest.raises(Exception) as e:
+        question.remove_choice_by_id('invalid-id')
+        assert str(e.value) == 'Invalid choice ID'
+
+def test_remove_all_choices():
+    question = Question(title='q1')
+    choice1 = question.add_choice('a', False)
+    choice2 = question.add_choice('b', True)
+
+    question.remove_all_choices()
+    assert question.choices == []
+
+
+
+def test_correct_selected_choices():
+    question = Question(title='q1', max_selections=2)
+    choice1 = question.add_choice('a', False)
+    choice2 = question.add_choice('b', True)
+    choice3 = question.add_choice('c', True)
+
+    selected_ids = [choice2.id, choice3.id]
+    assert question.correct_selected_choices(selected_ids)
+
+def test_correct_selected_choices_with_invalid_choice():
+
+    question = Question(title='q1', max_selections=2)
+    choice1 = question.add_choice('a', False)
+    choice2 = question.add_choice('b', True)
+
+    selected_ids = [choice1.id,'invalid-id']
+    with pytest.raises(Exception) as e:
+        question.correct_selected_choices(selected_ids)
+        assert str(e.value) == 'Invalid choice ID'
+
+def test_invalid_len_selected_choices():
+    question = Question(title='q1', max_selections=1)
+    choice1 = question.add_choice('a', False)
+    choice2 = question.add_choice('b', True)
+    choice3 = question.add_choice('c', True)
+
+    selected_ids = [choice2.id, choice3.id]
+    with pytest.raises(Exception) as e:
+        question.correct_selected_choices(selected_ids)
+        assert str(e.value) == 'Cannot select more than 1 choices'
+
+def test_set_correct_choices():
+
+    question = Question(title='q1')
+    choice1 = question.add_choice('a', False)
+    choice2 = question.add_choice('b', True)
+    choice3 = question.add_choice('c', True)
+
+    question.set_correct_choices([choice2.id, choice3.id])
+    assert choice1.is_correct == False
+    assert choice2.is_correct
+    assert choice3.is_correct
+
+
+def test_raises_if_invalid_set_correct_choices():
+
+    question = Question(title='q1')
+
+    with pytest.raises(Exception) as e:
+        question.set_correct_choices(['invalid-id'])
